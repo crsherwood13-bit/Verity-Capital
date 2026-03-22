@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+
+  .scene{
+    width:100%;height:100%;
+    position:relative;
+    overflow:hidden;
+    background:transparent;
+    perspective:900px;
+    perspective-origin:65% 55%;
+  }
+  /* Vignette overlay — dark edges, clear center-right */
+  .scene::after{
+    content:'';
+    position:absolute;inset:0;
+    pointer-events:none;z-index:3;
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(9,9,10,.55) 75%),
+      linear-gradient(to right, rgba(9,9,10,.85) 0%, transparent 25%),
+      linear-gradient(to bottom, rgba(9,9,10,.5) 0%, transparent 18%, transparent 82%, rgba(9,9,10,.5) 100%);
+  }
+
+  /* ambient glow */
+  .scene::before{
+    content:'';position:absolute;
+    width:600px;height:600px;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(201,168,76,.22) 0%,rgba(201,168,76,.08) 40%,transparent 68%);
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    animation:pulse 5s ease-in-out infinite;
+    pointer-events:none;z-index:0;
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);opacity:.7}
+    50%{transform:scale(1.18);opacity:1}
+  }
+
+  canvas{position:absolute;inset:0;pointer-events:none;z-index:0}
+
+  .v-wrap{
+    position:absolute;
+    z-index:1;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+  }
+
+  .v-3d-wrap{
+    position:relative;
+    transform-style:preserve-3d;
+    animation:lazySusan 3.8s linear infinite;
+  }
+  @keyframes lazySusan{
+    from{transform:rotateY(0deg)}
+    to{transform:rotateY(360deg)}
+  }
+
+  .vl{
+    position:absolute;top:0;left:0;
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:clamp(300px,30vw,460px);
+    line-height:1;letter-spacing:-.02em;
+    user-select:none;white-space:nowrap;
+  }
+  .vl.front{
+    position:relative;
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:clamp(300px,30vw,460px);
+    line-height:1;letter-spacing:-.02em;
+    user-select:none;
+    color:#c9a84c;
+    text-shadow:
+      0 0 20px rgba(201,168,76,1),
+      0 0 50px rgba(201,168,76,.75),
+      0 0 100px rgba(201,168,76,.5),
+      0 0 180px rgba(201,168,76,.28),
+      0 0 320px rgba(201,168,76,.12),
+      0 4px 8px rgba(0,0,0,.9);
+    transform:translateZ(18px);
+    animation:breathe 5s ease-in-out infinite;
+  }
+  .vl.d1{color:#b8922e;text-shadow:none;transform:translateZ(15px)}
+  .vl.d2{color:#a07a20;text-shadow:none;transform:translateZ(12px)}
+  .vl.d3{color:#8a6418;text-shadow:none;transform:translateZ(9px)}
+  .vl.d4{color:#745210;text-shadow:none;transform:translateZ(6px)}
+  .vl.d5{color:#5e4008;text-shadow:none;transform:translateZ(3px)}
+  .vl.d6{color:#3a2604;text-shadow:none;transform:translateZ(0px)}
+  .vl.back{color:#2a1a02;text-shadow:none;transform:translateZ(-18px) rotateY(180deg)}
+
+  .glow-floor{
+    position:absolute;
+    bottom:-20px;left:50%;transform:translateX(-50%);
+    width:75%;height:24px;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(201,168,76,.32) 0%,transparent 70%);
+    filter:blur(8px);
+    animation:floorPulse 3.8s linear infinite;
+  }
+  @keyframes breathe{
+    0%,100%{
+      text-shadow:0 0 20px rgba(201,168,76,.8),0 0 50px rgba(201,168,76,.55),0 0 100px rgba(201,168,76,.3),0 0 180px rgba(201,168,76,.12);
+      transform:translateZ(18px) scale(1);
+    }
+    50%{
+      text-shadow:0 0 30px rgba(220,185,80,1),0 0 70px rgba(201,168,76,.85),0 0 140px rgba(201,168,76,.5),0 0 280px rgba(201,168,76,.22);
+      transform:translateZ(18px) scale(1.025);
+    }
+  }
+  @keyframes floorPulse{
+    0%,100%{opacity:.55;transform:translateX(-50%) scaleX(1)}
+    50%{opacity:.9;transform:translateX(-50%) scaleX(1.15)}
+  }
+
+  /* Mobile: shift V left so it doesn't clip right edge,
+     and shows more centered as watermark */
+  @media(max-width:960px){
+    .v-wrap{
+      right:auto;
+      left:50%;
+      top:50%;
+      transform:translate(-30%,-50%);
+    }
+    .vl,.vl.front{
+      font-size:clamp(200px,78vw,360px);
+    }
+    .scene::before{
+      right:auto;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:auto;
+      top:50%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="scene">
+  <canvas id="c"></canvas>
+  <div class="v-wrap">
+    <div class="v-3d-wrap">
+      <span class="vl back">V</span>
+      <span class="vl d6">V</span>
+      <span class="vl d5">V</span>
+      <span class="vl d4">V</span>
+      <span class="vl d3">V</span>
+      <span class="vl d2">V</span>
+      <span class="vl d1">V</span>
+      <span class="vl front">V</span>
+    </div>
+    <div class="glow-floor"></div>
+  </div>
+</div>
+
+<script>
+/* particles — run on all screen sizes */
+var canvas=document.getElementById('c');
+var ctx=canvas.getContext('2d');
+var DPR=Math.min(window.devicePixelRatio||1,2);
+
+function resize(){
+  canvas.width=window.innerWidth*DPR;
+  canvas.height=window.innerHeight*DPR;
+  canvas.style.width=window.innerWidth+'px';
+  canvas.style.height=window.innerHeight+'px';
+}
+resize();
+window.addEventListener('resize',resize,{passive:true});
+
+function rand(a,b){return a+Math.random()*(b-a);}
+var isMobile=window.innerWidth<=960;
+
+var pts=[];
+for(var i=0;i<90;i++){
+  /* on mobile bias particles across full width */
+  pts.push({
+    x:rand(0,window.innerWidth*DPR),
+    y:rand(0,window.innerHeight*DPR),
+    sz:rand(1,3.2)*DPR,
+    spx:rand(-.12,.18)*DPR,
+    spy:rand(-.32,-.06)*DPR,
+    op:rand(.07,.5),
+    ph:rand(0,Math.PI*2),
+    ps:rand(.007,.02)
+  });
+}
+
+var flares=[];
+function mkFlare(){return{
+  x:rand(0,window.innerWidth*DPR),
+  y:rand(0,window.innerHeight*DPR),
+  sz:rand(2,5)*DPR,
+  life:Math.floor(rand(0,120)),
+  maxLife:rand(90,180),
+  spx:rand(-.08,.2)*DPR,
+  spy:rand(-.4,-.05)*DPR
+};}
+for(var j=0;j<22;j++)flares.push(mkFlare());
+
+function draw(){
+  var W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  var i,p,f,glow,alpha,sz,t,op,gr;
+
+  for(i=0;i<pts.length;i++){
+    p=pts[i];p.ph+=p.ps;
+    glow=0.5+0.5*Math.sin(p.ph);
+    alpha=p.op*(0.6+0.4*glow);
+    sz=p.sz*(0.85+0.15*glow);
+    ctx.beginPath();ctx.arc(p.x,p.y,sz,0,Math.PI*2);
+    ctx.fillStyle='rgba(201,168,76,'+alpha+')';ctx.fill();
+    if(p.sz>2.4*DPR&&glow>0.72){
+      ctx.strokeStyle='rgba(220,190,90,'+(alpha*0.35)+')';
+      ctx.lineWidth=0.5;ctx.beginPath();
+      ctx.moveTo(p.x-sz*2.2,p.y);ctx.lineTo(p.x+sz*2.2,p.y);
+      ctx.moveTo(p.x,p.y-sz*2.2);ctx.lineTo(p.x,p.y+sz*2.2);
+      ctx.stroke();
+    }
+    p.x+=p.spx;p.y+=p.spy;
+    if(p.y<-10)p.y=H+5;
+    if(p.x<-10)p.x=W+5;
+    if(p.x>W+10)p.x=-5;
+  }
+
+  for(i=0;i<flares.length;i++){
+    f=flares[i];f.life++;
+    if(f.life>f.maxLife){flares[i]=mkFlare();continue;}
+    t=f.life/f.maxLife;
+    op=(t<0.3?t/0.3:1-(t-0.3)/0.7)*0.7;
+    gr=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.sz*5);
+    gr.addColorStop(0,'rgba(255,220,100,'+op+')');
+    gr.addColorStop(0.4,'rgba(201,168,76,'+(op*0.5)+')');
+    gr.addColorStop(1,'rgba(201,168,76,0)');
+    ctx.beginPath();ctx.arc(f.x,f.y,f.sz*5,0,Math.PI*2);
+    ctx.fillStyle=gr;ctx.fill();
+    f.x+=f.spx;f.y+=f.spy;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
