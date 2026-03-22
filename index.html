@@ -290,11 +290,15 @@ footer{background:var(--black);border-top:1px solid var(--bdr2);padding:60px;pos
 
 /* ── SCROLL REVEAL ────────────────────────────── */
 .reveal{
-  opacity:0;
-  transform:translateY(32px);
+  opacity:1;
+  transform:translateY(0);
   transition:opacity .8s ease, transform .8s ease;
 }
-.reveal.visible{
+.reveal.hidden{
+  opacity:0;
+  transform:translateY(32px);
+}
+.reveal.hidden.visible{
   opacity:1;
   transform:translateY(0);
 }
@@ -868,16 +872,28 @@ footer{background:var(--black);border-top:1px solid var(--bdr2);padding:60px;pos
 
   /* ── SCROLL REVEAL ── */
   var revEls = document.querySelectorAll('.reveal');
+  // Add hidden class to elements below fold only
+  revEls.forEach(function(el){
+    var rect = el.getBoundingClientRect();
+    if(rect.top > window.innerHeight) el.classList.add('hidden');
+  });
   if('IntersectionObserver' in window){
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(e){
-        if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
+        if(e.isIntersecting){
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
       });
-    },{threshold:0.08});
+    },{threshold:0.05, rootMargin:'0px 0px 50px 0px'});
     revEls.forEach(function(el){ io.observe(el); });
   } else {
-    revEls.forEach(function(el){ el.classList.add('visible'); });
+    revEls.forEach(function(el){ el.classList.remove('hidden'); });
   }
+  // Hard fallback - everything visible after 1s no matter what
+  setTimeout(function(){
+    revEls.forEach(function(el){ el.classList.remove('hidden'); el.classList.add('visible'); });
+  }, 1000);
 
   /* ── FUNNEL BALL ── */
   var stages  = document.querySelectorAll('.funnel-stage');
@@ -932,5 +948,3 @@ footer{background:var(--black);border-top:1px solid var(--bdr2);padding:60px;pos
   },{threshold:0.2});
   var fsec = document.getElementById('funnel-sec');
   if(fsec) fio.observe(fsec);
-
- 
