@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vantage & Verity — Internal Portal</title>
+<meta name="robots" content="noindex, nofollow"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --black:#09090a;--s1:#111112;--s2:#161617;
+  --gold:#c9a84c;--goldlt:#dfc07a;--golddk:#8a6020;
+  --white:#f0ede6;--muted:rgba(240,237,230,.42);--muted2:rgba(240,237,230,.22);
+  --bdr:rgba(201,168,76,.15);--bdr2:rgba(240,237,230,.07);
+  --green:#4cc97b;--red:#c94c4c;
+}
+body{background:var(--black);color:var(--white);font-family:'Manrope',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;z-index:9990;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;}
+
+/* ── LOCK SCREEN ── */
+#lockscreen{
+  position:fixed;inset:0;z-index:1000;
+  background:var(--black);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  padding:40px;
+}
+.lock-brand{display:flex;align-items:center;gap:12px;margin-bottom:64px}
+.lock-v{font-family:'Playfair Display',serif;font-weight:900;font-size:28px;color:var(--gold)}
+.lock-name{font-family:'Cormorant Garamond',serif;font-size:20px;letter-spacing:.08em;color:var(--white)}
+.lock-box{width:100%;max-width:380px;border:1px solid var(--bdr2);background:var(--s1)}
+.lb-header{padding:28px 32px;border-bottom:1px solid var(--bdr2);text-align:center}
+.lb-tag{font-size:9px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.lb-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--white)}
+.lb-body{padding:28px 32px}
+.lb-label{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;display:block}
+.lb-input{
+  width:100%;background:var(--black);border:1px solid var(--bdr2);
+  color:var(--white);font-family:'Manrope',sans-serif;font-size:14px;font-weight:300;
+  padding:14px 16px;outline:none;letter-spacing:.1em;
+  transition:border-color .2s;
+  -webkit-text-security:disc;
+}
+.lb-input:focus{border-color:var(--gold)}
+.lb-input::placeholder{color:var(--muted2);letter-spacing:.05em}
+.lb-btn{
+  width:100%;margin-top:12px;
+  background:var(--gold);color:var(--black);
+  font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.28em;text-transform:uppercase;
+  padding:15px;border:none;cursor:pointer;
+  transition:background .2s;
+}
+.lb-btn:hover{background:var(--goldlt)}
+.lb-error{
+  font-size:11px;color:var(--red);text-align:center;
+  margin-top:10px;letter-spacing:.06em;
+  opacity:0;transition:opacity .3s;
+}
+.lb-error.show{opacity:1}
+.lb-note{font-size:10px;color:var(--muted2);text-align:center;margin-top:20px;letter-spacing:.06em}
+
+/* ── PORTAL (hidden until unlocked) ── */
+#portal{display:none}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:500;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 48px;
+  background:rgba(9,9,10,.95);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--bdr2);
+}
+.nav-left{display:flex;align-items:center;gap:12px}
+.nav-v{font-family:'Playfair Display',serif;font-weight:900;font-size:18px;color:var(--gold)}
+.nav-name{font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:.08em;color:var(--white)}
+.nav-divider{width:1px;height:16px;background:var(--bdr2);margin:0 4px}
+.nav-doc{font-size:9px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-time{font-size:10px;color:var(--muted2);letter-spacing:.1em}
+.nav-lock-btn{
+  font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted2);background:none;border:1px solid var(--bdr2);
+  padding:6px 14px;cursor:pointer;transition:all .2s;
+}
+.nav-lock-btn:hover{color:var(--red);border-color:var(--red)}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 57px)}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  border-right:1px solid var(--bdr2);
+  background:var(--s1);
+  padding:32px 0;
+  position:sticky;top:57px;height:calc(100vh - 57px);
+  overflow-y:auto;
+}
+.sb-section{margin-bottom:8px}
+.sb-section-label{
+  font-size:8px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--muted2);padding:0 24px 10px;display:block;
+}
+.sb-link{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 24px;
+  font-size:12px;color:var(--muted);text-decoration:none;
+  transition:all .2s;border-left:2px solid transparent;
+}
+.sb-link:hover{color:var(--white);background:rgba(201,168,76,.04);border-left-color:rgba(201,168,76,.3)}
+.sb-link.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,168,76,.06)}
+.sb-icon{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:.6}
+.sb-divider{height:1px;background:var(--bdr2);margin:16px 24px}
+.sb-external{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 24px;
+  font-size:11px;color:var(--muted2);text-decoration:none;
+  transition:color .2s;
+}
+.sb-external:hover{color:var(--gold)}
+.sb-ext-icon{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.5}
+
+/* ── MAIN CONTENT ── */
+.content{padding:48px 56px;max-width:900px}
+
+/* ── DASHBOARD HERO ── */
+.dash-hero{margin-bottom:48px}
+.dh-tag{font-size:10px;font-weight:600;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.dh-title{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,4vw,52px);font-weight:300;line-height:1.08;color:var(--white);margin-bottom:10px}
+.dh-title em{font-style:italic;color:var(--goldlt)}
+.dh-sub{font-size:13.5px;line-height:1.8;color:var(--muted);max-width:520px}
+
+/* ── QUICK STATS ── */
+.quick-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bdr2);border:1px solid var(--bdr2);margin-bottom:48px}
+.qs-item{background:var(--black);padding:20px 20px}
+.qs-label{font-size:9px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px}
+.qs-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--gold);line-height:1}
+
+/* ── DOC GRID ── */
+.doc-section{margin-bottom:48px}
+.ds-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bdr2)}
+.ds-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--white)}
+.ds-tag{font-size:9px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2)}
+.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bdr2);border:1px solid var(--bdr2)}
+.doc-card{
+  background:var(--black);padding:24px 24px;
+  text-decoration:none;transition:background .2s;
+  position:relative;overflow:hidden;display:block;
+}
+.doc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.doc-card:hover::before{transform:scaleX(1)}
+.doc-card:hover{background:var(--s1)}
+.dc-type{font-size:8px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.dc-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--white);margin-bottom:6px;line-height:1.2}
+.dc-desc{font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.dc-meta{display:flex;align-items:center;gap:12px}
+.dc-tag{font-size:8px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--bdr2);color:var(--muted2)}
+.dc-tag.live{border-color:rgba(76,201,123,.3);color:var(--green);background:rgba(76,201,123,.06)}
+.dc-arrow{position:absolute;bottom:16px;right:16px;font-size:12px;color:var(--gold);opacity:.3;transition:all .2s}
+.doc-card:hover .dc-arrow{opacity:1;transform:translate(2px,-2px)}
+
+/* ── SINGLE DOC VIEW ── */
+.doc-view{display:none}
+.dv-back{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted2);text-decoration:none;margin-bottom:32px;
+  transition:color .2s;cursor:pointer;background:none;border:none;
+}
+.dv-back:hover{color:var(--gold)}
+.dv-back svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── EMBED FRAME ── */
+.doc-embed{
+  width:100%;height:80vh;border:1px solid var(--bdr2);
+  background:var(--s1);
+}
+.embed-placeholder{
+  width:100%;height:80vh;border:1px solid var(--bdr2);
+  background:var(--s1);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+}
+.ep-icon{width:40px;height:40px;stroke:var(--gold);fill:none;stroke-width:1;opacity:.4}
+.ep-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--white)}
+.ep-sub{font-size:12px;color:var(--muted);text-align:center;max-width:300px;line-height:1.6}
+.ep-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);text-decoration:none;
+  border:1px solid var(--bdr);padding:12px 24px;
+  transition:all .2s;margin-top:8px;
+}
+.ep-btn:hover{background:rgba(201,168,76,.08)}
+.ep-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── ACTIVE PAGE ── */
+.page-section{display:none}
+.page-section.active{display:block}
+#dash{display:block}
+
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .content{padding:32px 24px}
+  .quick-stats{grid-template-columns:1fr 1fr}
+  .doc-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOCK SCREEN ═══ -->
+<div id="lockscreen">
+  <div class="lock-brand">
+    <span class="lock-v">V</span>
+    <span class="lock-name">Vantage & Verity</span>
+  </div>
+  <div class="lock-box">
+    <div class="lb-header">
+      <div class="lb-tag">Internal Access Only</div>
+      <div class="lb-title">Operations Portal</div>
+    </div>
+    <div class="lb-body">
+      <label class="lb-label" for="pw">Access Code</label>
+      <input class="lb-input" type="password" id="pw" placeholder="Enter access code" autocomplete="off"/>
+      <button class="lb-btn" onclick="unlock()">Access Portal</button>
+      <div class="lb-error" id="err">Incorrect access code. Try again.</div>
+      <div class="lb-note">Vantage & Verity · Internal use only</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PORTAL ═══ -->
+<div id="portal">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <span class="nav-v">V</span>
+    <span class="nav-name">Vantage & Verity</span>
+    <div class="nav-divider"></div>
+    <span class="nav-doc">Operations Portal</span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-time" id="navTime"></span>
+    <button class="nav-lock-btn" onclick="lock()">Lock Portal</button>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-section">
+      <span class="sb-section-label">Navigation</span>
+      <a class="sb-link active" href="#" onclick="showPage('dash');setActive(this);return false">
+        <svg class="sb-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="sb-link" href="#" onclick="showPage('sales');setActive(this);return false">
+        <svg class="sb-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        Sales & Closing
+      </a>
+      <a class="sb-link" href="#" onclick="showPage('ops');setActive(this);return false">
+        <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Operations
+      </a>
+      <a class="sb-link" href="#" onclick="showPage('marketing');setActive(this);return false">
+        <svg class="sb-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Marketing & Funnels
+      </a>
+      <a class="sb-link" href="#" onclick="showPage('templates');setActive(this);return false">
+        <svg class="sb-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Templates & Copy
+      </a>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-section">
+      <span class="sb-section-label">Quick Links</span>
+      <a class="sb-external" href="closing-sop.html" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Closing Process SOP
+      </a>
+      <a class="sb-external" href="confirmation.html" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Booking Page
+      </a>
+      <a class="sb-external" href="founder.html" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Founder Page
+      </a>
+      <a class="sb-external" href="index.html" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Main Website
+      </a>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-section">
+      <span class="sb-section-label">External Tools</span>
+      <a class="sb-external" href="https://tally.so/r/jaLqN1" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Origination Brief (Tally)
+      </a>
+      <a class="sb-external" href="https://calendar.google.com" target="_blank">
+        <svg class="sb-ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Google Calendar
+      </a>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page-section active" id="dash">
+      <div class="dash-hero">
+        <div class="dh-tag">Internal Operations</div>
+        <h1 class="dh-title">Good to have you<br/><em>back, Charles.</em></h1>
+        <p class="dh-sub">All internal documents, SOPs, templates, and resources in one place. Use the sidebar to navigate between sections.</p>
+      </div>
+
+      <div class="quick-stats">
+        <div class="qs-item"><div class="qs-label">Offer Price</div><div class="qs-val">$8,500</div></div>
+        <div class="qs-item"><div class="qs-label">Retainer</div><div class="qs-val">$10–15K</div></div>
+        <div class="qs-item"><div class="qs-label">Guarantee</div><div class="qs-val">6 Convos</div></div>
+        <div class="qs-item"><div class="qs-label">Close SLA</div><div class="qs-val">2 Calls</div></div>
+      </div>
+
+      <div class="doc-section">
+        <div class="ds-header">
+          <div class="ds-title">Recent Documents</div>
+          <div class="ds-tag">All active SOPs</div>
+        </div>
+        <div class="doc-grid">
+          <a class="doc-card" href="closing-sop.html" target="_blank">
+            <div class="dc-type">Sales SOP</div>
+            <div class="dc-title">Closing Process & SOP</div>
+            <div class="dc-desc">Full 4-stage mandate close process. Pre-discovery through onboarding activation. All templates and call recordings linked.</div>
+            <div class="dc-meta"><span class="dc-tag live">Live</span><span class="dc-tag">4 Stages</span></div>
+            <div class="dc-arrow">↗</div>
+          </a>
+          <a class="doc-card" href="#" onclick="showPage('marketing');setActive(document.querySelector('[onclick*=marketing]'));return false">
+            <div class="dc-type">Strategy</div>
+            <div class="dc-title">Dual Funnel Conquest Plan</div>
+            <div class="dc-desc">Cold outbound + lead magnet funnel architecture. Ad scripts, sequences, psychographic profiles, media buying playbook.</div>
+            <div class="dc-meta"><span class="dc-tag live">Live</span><span class="dc-tag">Phase 1</span></div>
+            <div class="dc-arrow">↗</div>
+          </a>
+          <a class="doc-card" href="#" onclick="showPage('ops');setActive(document.querySelector('[onclick*=ops]'));return false">
+            <div class="dc-type">Operations</div>
+            <div class="dc-title">ICP & Mandate Qualification</div>
+            <div class="dc-desc">Green signals, red flags, mandate diagnostic questions, and the qualify/disqualify framework for every discovery call.</div>
+            <div class="dc-meta"><span class="dc-tag">Reference</span></div>
+            <div class="dc-arrow">↗</div>
+          </a>
+          <a class="doc-card" href="#" onclick="showPage('templates');setActive(document.querySelector('[onclick*=templates]'));return false">
+            <div class="dc-type">Templates</div>
+            <div class="dc-title">Email Sequences & Copy</div>
+            <div class="dc-desc">5-touch cold email sequence, 7-email nurture sequence, post-discovery template, post-close template.</div>
+            <div class="dc-meta"><span class="dc-tag">Copy</span><span class="dc-tag">Sequences</span></div>
+            <div class="dc-arrow">↗</div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALES PAGE -->
+    <div class="page-section" id="sales">
+      <div class="dash-hero">
+        <div class="dh-tag">Section — Sales & Closing</div>
+        <h1 class="dh-title">Sales &<br/><em>Closing Documents</em></h1>
+        <p class="dh-sub">Everything from first contact through signed agreement. Follow in sequence. Do not skip stages.</p>
+      </div>
+      <div class="doc-grid" style="margin-bottom:24px">
+        <a class="doc-card" href="closing-sop.html" target="_blank">
+          <div class="dc-type">Primary SOP</div>
+          <div class="dc-title">Closing Process SOP</div>
+          <div class="dc-desc">Full interactive 4-stage document. Pre-discovery, discovery call structure, post-discovery follow-up, closing & activation. All links and checklists live.</div>
+          <div class="dc-meta"><span class="dc-tag live">Primary</span></div>
+          <div class="dc-arrow">↗</div>
+        </a>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Call Framework</div>
+          <div class="dc-title">Discovery Call Script</div>
+          <div class="dc-desc">6-phase call structure: Frame → Diagnose (6 questions) → Educate → Fit Check → Present → Close. Full word-for-word script with rationale.</div>
+          <div class="dc-meta"><span class="dc-tag">Reference</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Offer Stack</div>
+          <div class="dc-title">Pricing Architecture</div>
+          <div class="dc-desc">$2,500 pilot (3 slots) → $8,500 standard 90-day → $10K+ monthly retainer → $15K+ white label. No FINRA. No rev share. Retainer only.</div>
+          <div class="dc-meta"><span class="dc-tag">Pricing</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Qualify Framework</div>
+          <div class="dc-title">Green Signals & Red Flags</div>
+          <div class="dc-desc">7 green signals to take a mandate. 7 hard walk-aways including FINRA-adjacent structures, vague mandates, no capital, and price-first objections.</div>
+          <div class="dc-meta"><span class="dc-tag">Qualification</span></div>
+        </div>
+      </div>
+
+      <!-- QUICK REFERENCE: OFFER STACK -->
+      <div style="border:1px solid var(--bdr2);margin-top:8px">
+        <div style="padding:16px 24px;background:var(--s2);border-bottom:1px solid var(--bdr2);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--white)">Pricing Quick Reference</span>
+          <span style="font-size:9px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted2)">Speak these confidently — no hedging</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bdr2)">
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">Pilot (3 slots)</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--gold);margin-bottom:4px">$2,500</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">In exchange for documented case study. Full service delivery.</div>
+          </div>
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">Standard</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--gold);margin-bottom:4px">$8,500</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">90-day mandate. 6 qualified conversations guaranteed.</div>
+          </div>
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">Retainer</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--gold);margin-bottom:4px">$10K+</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">Monthly rolling. Ongoing origination cycles.</div>
+          </div>
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">White Label</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--gold);margin-bottom:4px">$15K+</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">Boutique M&A advisory. Full white-label function.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPS PAGE -->
+    <div class="page-section" id="ops">
+      <div class="dash-hero">
+        <div class="dh-tag">Section — Operations</div>
+        <h1 class="dh-title">Operations<br/><em>Documents</em></h1>
+        <p class="dh-sub">Mandate management, ICP qualification, onboarding, and delivery standards.</p>
+      </div>
+      <div class="doc-grid">
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Mandate Management</div>
+          <div class="dc-title">5-Stage Origination System</div>
+          <div class="dc-desc">Mandate Definition → Proprietary Targeting → Omnichannel Outbound → Internal DD → Qualified Handoff. 90-day cycle SLA.</div>
+          <div class="dc-meta"><span class="dc-tag">Core Process</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Delivery Standard</div>
+          <div class="dc-title">Guarantee Terms</div>
+          <div class="dc-desc">6 qualified LOI-level conversations in 90 days or engagement continues free. Define "qualified" before mandate activation — not after.</div>
+          <div class="dc-meta"><span class="dc-tag">SLA</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Onboarding</div>
+          <div class="dc-title">Kickoff & Launch SLA</div>
+          <div class="dc-desc">Payment verified → Agreement signed → OB email sent → Slack invite → Kickoff call → Campaign live within 14 days. No exceptions to sequence.</div>
+          <div class="dc-meta"><span class="dc-tag">14-Day SLA</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Infrastructure</div>
+          <div class="dc-title">RevPoint + Expandi Stack</div>
+          <div class="dc-desc">RevPoint.io cold email infrastructure. Expandi for LI DM automation. 800+ verified owner touches per day. 97%+ inbox placement target.</div>
+          <div class="dc-meta"><span class="dc-tag">Tech Stack</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARKETING PAGE -->
+    <div class="page-section" id="marketing">
+      <div class="dash-hero">
+        <div class="dh-tag">Section — Marketing & Funnels</div>
+        <h1 class="dh-title">Marketing &<br/><em>Funnel Architecture</em></h1>
+        <p class="dh-sub">Dual funnel system, platform strategy, ad scripts, psychographic profiles, and media buying playbook.</p>
+      </div>
+      <div class="doc-grid">
+        <a class="doc-card" href="VV_Conquest_Mindmap.html" target="_blank">
+          <div class="dc-type">Master Plan</div>
+          <div class="dc-title">Dual Funnel Conquest Map</div>
+          <div class="dc-desc">Full architecture: cold outbound funnel + lead magnet funnel. Both funnels mapped, offer stack, 5-touch email sequence, 7-email nurture, VSL beats, Expandi LI sequence.</div>
+          <div class="dc-meta"><span class="dc-tag live">Primary</span></div>
+          <div class="dc-arrow">↗</div>
+        </a>
+        <a class="doc-card" href="VV_Cold_LP_Advertorial.html" target="_blank">
+          <div class="dc-type">Cold Funnel</div>
+          <div class="dc-title">Standalone Cold LP</div>
+          <div class="dc-desc">Carl Weische model translated for B2B deal origination. Advertorial style, editorial format. Runs independent of main site. Sticky CTA, FAQ, full case study.</div>
+          <div class="dc-meta"><span class="dc-tag live">Live</span></div>
+          <div class="dc-arrow">↗</div>
+        </a>
+        <a class="doc-card" href="VV_Media_Buying_Playbook.html" target="_blank">
+          <div class="dc-type">Media Buying</div>
+          <div class="dc-title">$50/Day → Scale Playbook</div>
+          <div class="dc-desc">Phase 0–3 budget architecture, 6 ad scripts, funnel types, vertical vs. horizontal scaling, testing priority stack, unit economics.</div>
+          <div class="dc-meta"><span class="dc-tag">Phase 1 Ready</span></div>
+          <div class="dc-arrow">↗</div>
+        </a>
+        <a class="doc-card" href="VV_Platform_Psychographic_Creative.html" target="_blank">
+          <div class="dc-type">Creative Strategy</div>
+          <div class="dc-title">Platform Rationale + Psychographics</div>
+          <div class="dc-desc">Why Meta first, LinkedIn second, X organic only. 3 ICP psychographic profiles. 6 full ad scripts with every word-choice explained. Angle decision matrix.</div>
+          <div class="dc-meta"><span class="dc-tag">Reference</span></div>
+          <div class="dc-arrow">↗</div>
+        </a>
+      </div>
+
+      <!-- PLATFORM QUICK REF -->
+      <div style="border:1px solid var(--bdr2);margin-top:24px">
+        <div style="padding:16px 24px;background:var(--s2);border-bottom:1px solid var(--bdr2)">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--white)">Platform Sequence — Quick Reference</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bdr2)">
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Phase 1 — Start Here</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--white);margin-bottom:6px">Meta</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">$25–50/day. Lead magnet + LP retarget. Finance/PE interest targeting. Best CPM for testing at low budget.</div>
+          </div>
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Phase 2 — Scale</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--white);margin-bottom:6px">LinkedIn</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">$100+/day. Job title targeting: Independent Sponsor, Principal. Highest quality ICP audience. Needs $3K+/month to run properly.</div>
+          </div>
+          <div style="background:var(--black);padding:20px">
+            <div style="font-size:8px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px">Organic Only</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--white);margin-bottom:6px">X.com</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">3 posts/week from Charles Sherwood personal account. Free proof-of-concept engine. Do not pay to promote until Phase 3.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATES PAGE -->
+    <div class="page-section" id="templates">
+      <div class="dash-hero">
+        <div class="dh-tag">Section — Templates & Copy</div>
+        <h1 class="dh-title">Templates<br/><em>& Copy Library</em></h1>
+        <p class="dh-sub">All sequences, email templates, and copy assets. Copy and customize — never send verbatim without personalization.</p>
+      </div>
+
+      <!-- COLD EMAIL SEQUENCE -->
+      <div style="border:1px solid var(--bdr2);margin-bottom:24px">
+        <div style="padding:16px 24px;background:var(--s2);border-bottom:1px solid var(--bdr2);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--white)">5-Touch Cold Email Sequence</span>
+          <span style="font-size:9px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted2)">Funnel 01 — Primary Outbound</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0;border-bottom:1px solid var(--bdr2);background:var(--black)">
+            <div style="padding:20px;border-right:1px solid var(--bdr2);font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold)">D1</div>
+            <div style="padding:20px">
+              <div style="font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px">Subject: "The deal that got away"</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Data point opener. No pitch. One observation, one question. "Is deal origination still a bottleneck for [firm]?" No CTA to book. Goal: open rate test.</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0;border-bottom:1px solid var(--bdr2);background:var(--black)">
+            <div style="padding:20px;border-right:1px solid var(--bdr2);font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold)">D3</div>
+            <div style="padding:20px">
+              <div style="font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px">Subject: "Re: The deal that got away"</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Follow-up. Share the mechanism: "800+ private owners/day." Link to cold LP or brief. Goal: drive to cold LP.</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0;border-bottom:1px solid var(--bdr2);background:var(--black)">
+            <div style="padding:20px;border-right:1px solid var(--bdr2);font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold)">D7</div>
+            <div style="padding:20px">
+              <div style="font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px">Subject: "What 9 qualified conversations in 84 days looks like"</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Case study. Contractor mandate. 1,400 owners, 9 convos, 84 days. Specific numbers. Goal: social proof, reply trigger.</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0;border-bottom:1px solid var(--bdr2);background:var(--black)">
+            <div style="padding:20px;border-right:1px solid var(--bdr2);font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold)">D14</div>
+            <div style="padding:20px">
+              <div style="font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px">Subject: "Quick question about your current mandate"</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Binary question: "Running off-market origination or primarily brokered?" Easy yes/no. Creates conversation without pressure. Goal: reply bait.</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0;background:var(--black)">
+            <div style="padding:20px;border-right:1px solid var(--bdr2);font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold)">D21</div>
+            <div style="padding:20px">
+              <div style="font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px">Subject: "Closing the loop — [First Name]"</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.6">Permission close. "I'll stop reaching out after this." Link to cold LP. "We only take mandates where we can deliver." Goal: future re-engagement, no burn.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-grid">
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Nurture Sequence</div>
+          <div class="dc-title">7-Email Post Lead Magnet</div>
+          <div class="dc-desc">Day 1: Deliver brief. Day 2: Broker problem data. Day 4: System credibility. Day 7: Case study. Day 10: Objection handling. Day 14: Urgency. Day 18: Direct ask.</div>
+          <div class="dc-meta"><span class="dc-tag">Funnel 02</span></div>
+        </div>
+        <div class="doc-card" style="cursor:default">
+          <div class="dc-type">Expandi</div>
+          <div class="dc-title">LI DM 5-Step Sequence</div>
+          <div class="dc-desc">Day 0: Profile view. Day 1: Connection request. Day 3: First DM (question only, no pitch). Day 7: Value drop (brief link). Day 14: Soft close (pilot offer).</div>
+          <div class="dc-meta"><span class="dc-tag">Automation</span></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /layout -->
+</div><!-- /portal -->
+
+<script>
+// ── PASSWORD ──
+// Change 'vantage2025' to whatever you want your access code to be
+const ACCESS_CODE = 'vantage2025';
+
+function unlock(){
+  const val = document.getElementById('pw').value;
+  const err = document.getElementById('err');
+  if(val === ACCESS_CODE){
+    document.getElementById('lockscreen').style.display = 'none';
+    document.getElementById('portal').style.display = 'block';
+    sessionStorage.setItem('vv_auth','1');
+  } else {
+    err.classList.add('show');
+    document.getElementById('pw').value = '';
+    document.getElementById('pw').focus();
+    setTimeout(()=>err.classList.remove('show'),3000);
+  }
+}
+
+function lock(){
+  sessionStorage.removeItem('vv_auth');
+  document.getElementById('lockscreen').style.display = 'flex';
+  document.getElementById('portal').style.display = 'none';
+  document.getElementById('pw').value = '';
+}
+
+// Auto-unlock if session active
+if(sessionStorage.getItem('vv_auth')==='1'){
+  document.getElementById('lockscreen').style.display='none';
+  document.getElementById('portal').style.display='block';
+}
+
+// Enter key on password
+document.addEventListener('DOMContentLoaded',()=>{
+  const pw = document.getElementById('pw');
+  if(pw) pw.addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+});
+
+// ── NAV PAGES ──
+function showPage(id){
+  document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
+  const t = document.getElementById(id);
+  if(t) t.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setActive(el){
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── CLOCK ──
+function updateTime(){
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const d = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const el = document.getElementById('navTime');
+  if(el) el.textContent = `${d} · ${t}`;
+}
+updateTime();
+setInterval(updateTime,30000);
+</script>
+</body>
+</html>
